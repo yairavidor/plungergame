@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMF Hair Dryer – AR</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js"></script>
+<style>
+  :root{--bg:#1c1c1c;--fg:#ececec;--red:#ff2a3d}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 35%,#4a4a4a 0%,#202020 70%);color:var(--fg);
+    font-family:"Courier New",ui-monospace,monospace;overflow:hidden}
+  model-viewer{width:100%;height:100%;--poster-color:transparent;--progress-bar-color:var(--red)}
+  header{position:fixed;top:0;left:0;right:0;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:2}
+  .brand{font-size:22px;letter-spacing:4px;font-weight:700}
+  .brand small{display:block;font-size:10px;letter-spacing:3px;opacity:.6;font-weight:400}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red)}
+  .bar{position:fixed;left:0;right:0;bottom:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;z-index:2}
+  button{font:inherit;border:0;border-radius:999px;padding:14px 22px;font-size:15px;letter-spacing:1px;cursor:pointer}
+  #ar{background:#f2f2f2;color:#111;font-weight:700;display:flex;align-items:center;gap:10px}
+  #ar .r{width:10px;height:10px;border-radius:50%;background:var(--red)}
+  #led{background:#2b2b2b;color:var(--fg);border:1px solid #555}
+  #led.off{opacity:.6}
+  #hint{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);font-size:12px;opacity:.6;text-align:center;width:90%;z-index:2}
+  model-viewer[ar-status="session-started"] ~ .bar, model-viewer[ar-status="session-started"] ~ #hint{display:none}
+  #scan{display:none;position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:10px 16px;border-radius:12px;font-size:14px}
+  model-viewer[ar-tracking="not-tracking"] #scan{display:block}
+</style>
+</head>
+<body>
+<header><div class="brand">cmf<small>by NOTHING · hair dryer</small></div><div class="dot"></div></header>
+
+<model-viewer id="mv" src="fan.glb" alt="CMF hair dryer"
+  ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" ar-scale="auto"
+  camera-controls touch-action="pan-y" auto-rotate auto-rotate-delay="1500" rotation-per-second="18deg"
+  camera-orbit="-55deg 75deg auto" shadow-intensity="1.1" shadow-softness="0.8"
+  exposure="0.85" tone-mapping="neutral" environment-image="neutral">
+  <button slot="ar-button" style="display:none"></button>
+  <div id="scan">Move the phone slowly over the surface…</div>
+</model-viewer>
+
+<div id="hint">Drag to rotate · pinch to zoom</div>
+<div class="bar">
+  <button id="ar"><span class="r"></span>VIEW ON SURFACE</button>
+  <button id="led">LED ON</button>
+</div>
+
+<script type="module">
+const mv=document.getElementById('mv'),arBtn=document.getElementById('ar'),ledBtn=document.getElementById('led'),hint=document.getElementById('hint');
+arBtn.addEventListener('click',()=>{
+  if(mv.canActivateAR) mv.activateAR();
+  else hint.textContent='AR needs a phone: Chrome on Android (ARCore) or Safari on iPhone. Open this link on your phone.';
+});
+let on=true;
+ledBtn.addEventListener('click',()=>{
+  const m=mv.model&&mv.model.materials.find(x=>x.name==='led'); if(!m) return;
+  on=!on;
+  m.setEmissiveFactor(on?[1,0.08,0.15]:[0,0,0]);
+  m.emissiveStrength!==undefined && m.setEmissiveStrength && m.setEmissiveStrength(on?4:0);
+  m.pbrMetallicRoughness.setBaseColorFactor(on?[1,0.12,0.18,1]:[0.25,0.22,0.22,1]);
+  ledBtn.textContent=on?'LED ON':'LED OFF'; ledBtn.classList.toggle('off',!on);
+});
+</script>
+</body>
+</html>
