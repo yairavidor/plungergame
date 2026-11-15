@@ -1,10 +1,10 @@
 // App shell: screens, scans, room/link connection, and the host's game referee.
-import * as V from './vision.js';
-import { faceScan, bodyScan } from './scan.js';
-import { Game } from './game.js';
-import { Net } from './net.js';
-import { sfx, unlockAudio } from './sound.js';
-import * as S from './store.js';
+import * as V from './vision.js?v=4';
+import { faceScan, bodyScan } from './scan.js?v=4';
+import { Game } from './game.js?v=4';
+import { Net } from './net.js?v=4';
+import { sfx, unlockAudio } from './sound.js?v=4';
+import * as S from './store.js?v=4';
 
 const $ = id => document.getElementById(id);
 const video = $('video'), overlay = $('overlay'), cam = new V.Camera(video);
@@ -235,7 +235,7 @@ setInterval(() => {
 function hostTap(i) { if (G && G.phase === 'start' && !G.ready[i]) { G.ready[i] = true; broadcast(); } }
 function hostHit(i, h) {
   if (!G || G.phase !== 'duel' || h.round !== G.round) return;   // first hit of the round wins; later ones are ignored
-  G.winner = i; G.scores[i]++; G.stuck = { owner: i, u: h.u, v: h.v }; hostSet('win');
+  G.winner = i; G.scores[i]++; G.stuck = { owner: i, u: h.u, v: h.v, l: h.l }; hostSet('win');
 }
 function hostRematch() { if (G && G.phase === 'win') { G.stuck = null; G.winner = -1; hostSet('position'); } }
 

@@ -1,8 +1,8 @@
 // Enrollment: (1) one-time face print, (2) daily 360° look scan. Both lock on HIM only.
-import * as V from './vision.js';
-import { brackets, txt, pill } from './draw.js';
-import { sfx } from './sound.js';
-import { profile, settings, targetName } from './store.js';
+import * as V from './vision.js?v=4';
+import { brackets, txt, pill } from './draw.js?v=4';
+import { sfx } from './sound.js?v=4';
+import { profile, settings, targetName } from './store.js?v=4';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 

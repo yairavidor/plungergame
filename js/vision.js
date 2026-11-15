@@ -97,10 +97,10 @@ export function detectPoses(video) {
   let ts = performance.now(); if (ts <= lastTs) ts = lastTs + 1; lastTs = ts;
   const r = pose.detectForVideo(video, ts);
   const W = video.videoWidth, H = video.videoHeight;
-  return (r.landmarks || []).map(lm => poseToPerson(lm, W, H)).filter(Boolean);
+  return (r.landmarks || []).map((lm, i) => poseToPerson(lm, W, H, (r.worldLandmarks || [])[i])).filter(Boolean);
 }
 
-function poseToPerson(lm, W, H) {
+function poseToPerson(lm, W, H, wl) {
   const P = i => ({ x: lm[i].x * W, y: lm[i].y * H, v: lm[i].visibility ?? 1 });
   const nose = P(0), le = P(7), re = P(8), ls = P(11), rs = P(12), lh = P(23), rh = P(24);
   const shW = Math.hypot(ls.x - rs.x, ls.y - rs.y);
@@ -119,8 +119,23 @@ function poseToPerson(lm, W, H) {
   return {
     head: { cx, cy, w: hw, h: hh },
     body: { x: Math.min(cx - hw, shX - shW * 0.8), y: cy - hh * 0.75, x2: Math.max(cx + hw, shX + shW * 0.8), y2: shY + shW * 0.75 },
-    shW, torso, noseVis: nose.v,
+    shW, torso, noseVis: nose.v, basis: headBasis(wl),
   };
+}
+
+// 3D head orientation from the pose model's metric landmarks (ears + nose).
+// Returned in a "screen" frame: x right, y up, z toward the viewer. Columns: side (his left), up, fwd (his face).
+function headBasis(wl) {
+  if (!wl || wl.length < 9) return null;
+  const P = i => [wl[i].x, -wl[i].y, -wl[i].z];
+  const L = P(7), R = P(8), N = P(0);
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dotv = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const side = norm(sub(L, R));
+  const mid = [(L[0] + R[0]) / 2, (L[1] + R[1]) / 2, (L[2] + R[2]) / 2];
+  let f = sub(N, mid); const k = dotv(f, side); f = norm([f[0] - side[0] * k, f[1] - side[1] * k, f[2] - side[2] * k]);
+  const up = norm([f[1] * side[2] - f[2] * side[1], f[2] * side[0] - f[0] * side[2], f[0] * side[1] - f[1] * side[0]]);
+  return { side, up, fwd: f };
 }
 
 // distance (m) from body size in the frame. fov = horizontal FOV of the long side of the video.
@@ -212,7 +227,7 @@ export class Tracker {
           const d = minFaceDist(faces, f.desc);
           if (!sideCheck) this.info.face = d;
           if (sideCheck) { if (d >= FACE_BAD) this.rejects.push({ head: { ...target.head }, t: now }); }
-          else if (d <= FACE_OK) { this.setLock(target, 'face', now); this.info.msg = ''; }
+          else if (d <= FACE_OK) { this.setLock(target, 'face', now); this.lastFaceOk = now; this.info.msg = ''; }
           else if (d >= FACE_BAD) {
             if (this.lock === target) this.drop('notHim');
             this.rejects.push({ head: { ...target.head }, t: now });
@@ -248,6 +263,7 @@ export class Tracker {
     } else { this.dist = null; }
     return {
       locked: !!this.lock, via: this.via, head: this.sm, dist: this.dist, rawDist: this.rawDist,
+      basis: this.lock ? this.lock.basis : null, faceSeen: now - (this.lastFaceOk || 0) < 1500,
       cands, rejects: this.rejects, info: this.info, lockPerson: this.lock,
     };
   }

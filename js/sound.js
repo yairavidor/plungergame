@@ -1,4 +1,4 @@
-import { settings } from './store.js';
+import { settings } from './store.js?v=4';
 let AC = null;
 export function unlockAudio() { ac(); }
 function ac() {

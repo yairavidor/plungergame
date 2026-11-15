@@ -1,8 +1,9 @@
 // The AR game screen: camera + lock on him + 2 m rule + head start button + bow duel.
-import * as V from './vision.js';
-import { drawPlunger, drawBow, BOW, PL_LEN, rr, txt, pill, brackets } from './draw.js';
-import { sfx, unlockAudio } from './sound.js';
-import { profile, settings, saveSettings, targetName } from './store.js';
+import * as V from './vision.js?v=4';
+import { drawPlunger, drawBow, BOW, PL_LEN, rr, txt, pill, brackets } from './draw.js?v=4';
+import { sfx, unlockAudio } from './sound.js?v=4';
+import { profile, settings, saveSettings, targetName } from './store.js?v=4';
+import { Plungers3D } from './three3d.js?v=4';
 
 const TOL = 0.5;          // m — how close the launch distance must be to his distance
 const VW = 270;           // virtual width used for the bow / HUD layout
@@ -19,6 +20,7 @@ export class Game {
     this.pl = { st: 'none', t: 0, power: 0, drawY: 0, snapT: 0 };
     this.flights = []; this.toastO = null; this.lastLock = 0; this.lastRep = 0;
     this.phaseAt = performance.now(); this.myStuck = null; this.stuckAt = 0; this.cdShown = null; this.ui = {};
+    this.p3 = new Plungers3D(document.getElementById('three')); this._stCache = null;
     this._down = e => this.down(e); this._move = e => this.move(e); this._up = () => this.up();
   }
 
@@ -42,6 +44,7 @@ export class Game {
     const cv = this.canvas;
     cv.removeEventListener('pointerdown', this._down); cv.removeEventListener('pointermove', this._move);
     cv.removeEventListener('pointerup', this._up); cv.removeEventListener('pointercancel', this._up);
+    try { this.p3.clear(); } catch (e) {}
   }
 
   async visionLoop() {
@@ -126,9 +129,10 @@ export class Game {
     const name = targetName();
     const T = { short: ['קצר מדי!', '#fbbf24'], long: ['חזק מדי!', '#fbbf24'], wide: ['פספוס!', '#fbbf24'], nolock: [`לא נעול על ${name}`, '#f87171'], close: ['קרוב מדי, לא נחשב', '#f87171'] };
     if (fl.res === 'hit') {
-      this.myStuck = { u: fl.u, v: fl.v }; this.stuckAt = performance.now();
+      const l = this.p3.toHeadLocal(fl.u, fl.v);   // where on HIS head, in his own 3D frame
+      this.myStuck = { u: fl.u, v: fl.v, l }; this.stuckAt = performance.now();
       this.toast('בול!! 🎯', '#4ade80'); sfx.thwop();
-      this.cb.hit({ u: fl.u, v: fl.v, round: this.G.round });
+      this.cb.hit({ u: fl.u, v: fl.v, l, round: this.G.round });
     } else { this.toast(...T[fl.res]); sfx.boing(); }
   }
 
@@ -165,6 +169,23 @@ export class Game {
 
     this.draw(c, now);
     this.hud(now);
+    this.render3d(now);
+  }
+
+  render3d(now) {
+    const vs = this.vs, G = this.G, p3 = this.p3;
+    p3.resize(this.w, this.h);
+    if (vs.locked && vs.basis) p3.updateHeadPose(vs.basis, vs.faceSeen, vs.lockPerson ? vs.lockPerson.noseVis : 1);
+    else if (now - this.lastLock > 3000) p3.resetHead();
+    const st = G.stuck || (this.myStuck && G.phase === 'duel' ? { owner: this.me, ...this.myStuck } : null);
+    if (st && !st.l) {   // older message without a 3D point: work it out once
+      const key = st.u + ',' + st.v;
+      if (!this._stCache || this._stCache.key !== key) this._stCache = { key, l: p3.toHeadLocal(st.u, st.v) };
+      st.l = this._stCache.l;
+    }
+    p3.setStuck(st ? [{ l: st.l, t0: this.stuckAt }] : []);
+    const flights = this.flights.map(fl => this.flightPose(fl, now)).filter(Boolean);
+    p3.render({ hs: this.hs, hand: this._hand, flights, now });
   }
 
   draw(c, now) {
@@ -191,23 +212,12 @@ export class Game {
       } else brackets(c, x0, y0, x1, y1, vs.via === 'look' ? '#a3e635' : '#4ade80', 3);
       pill(c, '🎯 ' + name, hs.x, y0 - 16, 12, 'rgba(34,197,94,.92)', '#052611');
       if (vs.dist && G.phase !== 'win') { const ok = vs.dist >= MIN_D; pill(c, vs.dist.toFixed(1) + " מ'", hs.x, y1 + (G.phase === 'start' ? 56 : 16), 12, ok ? 'rgba(0,0,0,.55)' : 'rgba(239,68,68,.9)', '#fff'); }
-      // stuck plunger(s)
-      const st = G.stuck || (this.myStuck && G.phase === 'duel' ? { owner: this.me, ...this.myStuck } : null);
-      if (st) {
-        const pxm = hs.w / 0.16, age = (now - this.stuckAt) / 1000, wob = 0.2 * Math.sin(age * 22) * Math.exp(-age * 2.5);
-        if (st.owner === this.me) {
-          const ax = hs.x + st.u * hs.w * 0.42, ay = hs.y + st.v * hs.h * 0.42, r = Math.hypot(st.u, st.v);
-          if (r < 0.35) drawPlunger(c, ax, ay, wob, pxm, 0, true);
-          else drawPlunger(c, ax, ay, Math.atan2(st.v, st.u) + wob, pxm, 0.55 + 0.4 * Math.min(1, r), false);
-        } else drawPlunger(c, hs.x + hs.w * 0.2, hs.y - hs.h * 0.4, -1.15 + wob, pxm, 0.95, false);
-      }
     }
-    // flights
-    for (const fl of this.flights) this.drawFlight(c, fl, now);
 
     // ---- virtual-coordinate HUD (bow, power bar, crosshair, countdown, toast) ----
     c.save(); c.scale(U, U);
     const VH = this.VH, CX = VW / 2, CY = VH / 2, restY = VH - 112;
+    this._hand = null;
     if (G.phase === 'duel') {
       const on = hs && (((CX * U - hs.x) / (hs.w / 2)) ** 2 + ((CY * U - hs.y) / (hs.h / 2)) ** 2 <= 1.1);
       const col = on ? '#4ade80' : 'rgba(255,255,255,.95)';
@@ -221,7 +231,7 @@ export class Game {
         let yy = restY - PL_LEN, xx = CX;
         if (pl.st === 'spawn') { const e = Math.min(1, (now - pl.t) / 500); yy = -150 + (yy + 150) * (1 - Math.pow(1 - e, 3)); }
         if (pl.st === 'drawing') { yy += pw * BOW.maxPull; const sh = pw >= 1 ? 2.2 : pw * 1.2; xx += (Math.random() - 0.5) * sh; yy += (Math.random() - 0.5) * sh; }
-        drawPlunger(c, xx, yy, Math.PI / 2, BOW.pxm, BOW.fore, false);
+        this._hand = { x: xx * U, y: yy * U, pxm: BOW.pxm * U * 0.85 };
         if (pl.st === 'drawing') {
           const ny = restY + pw * BOW.maxPull;
           c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(xx + 2, ny + 5, 15, 12, 0, 0, 7); c.fill();
@@ -252,10 +262,11 @@ export class Game {
     c.restore();
   }
 
-  drawFlight(c, fl, now) {
+  flightPose(fl, now) {
     const U = this.U, hs = this.hs, k = (now - fl.t0) / fl.dur;
     const alpha = k > 1 ? V.clamp(1 - (k - 1) / 0.6, 0, 1) : 1;
-    const pxmHead = hs ? hs.w / 0.16 : fl.pxmHead, fS = pxmHead * fl.d;
+    if (alpha <= 0) return null;
+    const pxmHead = hs ? hs.w / 0.17 : fl.pxmHead, fS = pxmHead * fl.d;
     const T = fl.rel && hs ? { x: hs.x + fl.rel.du * hs.w, y: hs.y + fl.rel.dv * hs.w } : fl.aimS;   // anchored to his head
     const S0 = { x: (VW / 2) * U, y: (this.VH - 112 - PL_LEN) * U };
     const at = kk => {
@@ -264,12 +275,13 @@ export class Game {
       else if (fl.res === 'short') { z = fl.range; fall = 900 * (kk - 1) ** 2 * U; }
       else z = fl.range + (kk - 1) * fl.range * 0.7;
       const kc = Math.min(kk, 1), arc = fS * 0.12 * fl.range * 4 * kc * (1 - kc) / z;
-      return { x: T.x + (S0.x - T.x) * (0.25 / z), y: T.y + (S0.y - T.y) * (0.25 / z) - arc + fall, z };
+      return { x: T.x + (S0.x - T.x) * (0.25 / z), y: T.y + (S0.y - T.y) * (0.25 / z) - arc + fall, z, z3: 900 * (fl.d - z) / fl.d };
     };
     const p = at(k), q = at(Math.max(0, k - 0.03));
-    const ang = Math.atan2(q.y - p.y, q.x - p.x) || Math.PI / 2;
-    const pxm = Math.min(BOW.pxm * U, fS / p.z);
-    drawPlunger(c, p.x, p.y, ang, pxm, 0.6, false, alpha);
+    let dir = [q.x - p.x, -(q.y - p.y), q.z3 - p.z3];
+    if (Math.hypot(...dir) < 1e-3) dir = [0, -1, 0.5];
+    let pxm = Math.min(BOW.pxm * U * 0.85, fS / p.z);
+    return { x: p.x, y: p.y, z: p.z3, pxm, dir, alpha };
   }
 
   hud(now) {
