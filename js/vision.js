@@ -21,7 +21,14 @@ export async function loadModels(onProgress = () => {}) {
   await faceapi.nets.faceRecognitionNet.loadFromUri(m);
 
   onProgress('טוען זיהוי גוף… (2/3)');
-  const fs = await FilesetResolver.forVisionTasks(BASE + 'mediapipe/wasm');
+  // use our own copy of the MediaPipe engine; if a file is missing on the site, fall back to the public CDN copy
+  let wasmBase = BASE + 'mediapipe/wasm';
+  try {
+    const ok = await Promise.all(['vision_wasm_internal.wasm', 'vision_wasm_nosimd_internal.wasm']
+      .map(f => fetch(wasmBase + '/' + f, { method: 'HEAD' }).then(r => r.ok).catch(() => false)));
+    if (!ok.every(Boolean)) { console.warn('local MediaPipe wasm missing, using CDN'); wasmBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'; }
+  } catch (e) {}
+  const fs = await FilesetResolver.forVisionTasks(wasmBase);
   const mkPose = (delegate) => PoseLandmarker.createFromOptions(fs, {
     baseOptions: { modelAssetPath: BASE + 'models/pose_landmarker_lite.task', delegate },
     runningMode: 'VIDEO', numPoses: 3,

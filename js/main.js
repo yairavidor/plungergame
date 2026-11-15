@@ -41,7 +41,7 @@ async function withModels() {
   if (modelsReady) return true;
   loading(true, 'טוען את מודלי הזיהוי… (רק בפעם הראשונה זה לוקח קצת זמן)');
   try { await ensureModels(); return true; }
-  catch (e) { toast('טעינת הזיהוי נכשלה. בדקו את החיבור לאינטרנט ונסו שוב'); return false; }
+  catch (e) { toast('טעינת הזיהוי נכשלה: ' + (e && e.message ? e.message.slice(0, 120) : e), 8000); return false; }
   finally { loading(false); }
 }
 async function startCam(facing = 'environment') {
