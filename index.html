@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d1017">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>דו-קרב פומפות 🪠</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪠</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/peerjs/peerjs.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<!-- camera layer (used by the scans and the game) -->
+<div id="stage" hidden>
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="overlay"></canvas>
+</div>
+
+<!-- HOME -->
+<section id="home" class="screen on">
+  <div class="wrap">
+    <div class="hero">
+      <div class="logo">🪠</div>
+      <h1>דו-קרב פומפות</h1>
+      <p class="sub">משחק AR לשני טלפונים. הראשון שמדביק פומפה לראש מנצח.</p>
+    </div>
+
+    <div id="invite" class="card invite" hidden>
+      <div class="inv-t">הוזמנת לחדר <b id="inviteCode"></b> 🎯</div>
+      <button id="btnJoin" class="big primary">🚪 הצטרפות למשחק</button>
+    </div>
+
+    <div class="card">
+      <label class="field">השם שלך<input id="inPlayer" maxlength="12" placeholder="למשל: יפתח" autocomplete="off"></label>
+    </div>
+
+    <div class="card">
+      <h2>🎯 המטרה</h2>
+      <label class="field">השם של הקירח<input id="inTarget" maxlength="12" placeholder="למשל: אבי" autocomplete="off"></label>
+      <div class="row">
+        <div class="row-t"><b>1. טביעת פנים</b><small>פעם אחת, נשמרת בטלפון</small></div>
+        <span id="stFace" class="badge"></span>
+        <button id="btnFace">סריקה</button>
+      </div>
+      <div class="row">
+        <div class="row-t"><b>2. סריקת 360° של היום</b><small>כדי לזהות אותו גם מאחור</small></div>
+        <span id="stLook" class="badge"></span>
+        <button id="btnLook">סריקה</button>
+      </div>
+      <p class="note">מספיק שאחד מכם סורק. כשתתחברו, הסריקות יעברו לטלפון השני לבד.</p>
+    </div>
+
+    <button id="btnHost" class="big primary">📲 יצירת חדר והזמנת חבר</button>
+    <button id="btnPractice" class="big">🎯 אימון לבד (טלפון אחד)</button>
+
+    <div class="foot">
+      <button id="btnSettings" class="link">⚙️ הגדרות</button>
+      <span id="modelStatus" class="muted"></span>
+    </div>
+  </div>
+</section>
+
+<!-- SCAN -->
+<section id="scan" class="screen cam">
+  <div class="topbar">
+    <button id="scanClose" class="icon" aria-label="סגירה">✕</button>
+    <b id="scanTitle"></b>
+    <button id="scanFlip" class="icon" aria-label="החלפת מצלמה">🔄</button>
+  </div>
+  <div class="bottom">
+    <div id="scanText" class="msg"></div>
+    <div class="bar"><i id="scanBar"></i></div>
+    <p id="scanTip" class="tip"></p>
+  </div>
+</section>
+
+<!-- LOBBY -->
+<section id="lobby" class="screen">
+  <div class="wrap">
+    <h1 class="center">החדר שלכם</h1>
+    <div class="code" id="roomCode">----</div>
+
+    <div class="card" id="shareCard">
+      <p>שלחו לחבר את הקישור, והוא פותח אותו בטלפון שלו:</p>
+      <input id="roomLink" readonly dir="ltr">
+      <div class="btns">
+        <button id="btnCopy">📋 העתקת הקישור</button>
+        <a id="btnWa" class="btn" target="_blank" rel="noopener">💬 שליחה בוואטסאפ</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="player"><span class="dot p1"></span><b id="lbMe"></b><span id="lbMeSt" class="muted"></span></div>
+      <div class="player"><span class="dot p2"></span><b id="lbOther"></b><span id="lbOtherSt" class="muted"></span></div>
+      <p id="lbNote" class="note"></p>
+      <div id="lbScanRow" class="btns">
+        <button id="lbFace">🙂 טביעת פנים</button>
+        <button id="lbLook">🔄 סריקת 360°</button>
+      </div>
+    </div>
+
+    <button id="btnStart" class="big primary" disabled>יאללה, למשחק! 🎯</button>
+    <p id="lbWait" class="center muted">מחכים שמי שפתח את החדר יתחיל…</p>
+    <button id="btnBack" class="big primary" hidden>↩ חזרה למשחק</button>
+    <button id="btnLeave" class="link center-block">יציאה מהחדר</button>
+  </div>
+</section>
+
+<!-- GAME -->
+<section id="game" class="screen cam">
+  <div class="topbar">
+    <button id="gExit" class="icon" aria-label="יציאה">✕</button>
+    <div class="gtop"><b id="gScore"></b><span id="gPhase"></span></div>
+    <span class="icon ghost"></span>
+  </div>
+  <div id="gPartner" class="partner" hidden></div>
+  <div id="gDebug" class="debug" dir="ltr" hidden></div>
+  <div id="gMsg" class="gmsg" hidden></div>
+  <div class="gside">
+    <button id="gCal" class="chip" hidden>📏 כיול: אני בדיוק 2 מ' ממנו</button>
+    <label id="gZoomWrap" class="zoom" hidden>🔍 <input id="gZoom" type="range"></label>
+  </div>
+  <button id="gRematch" class="big primary rematch" hidden>🔁 סיבוב נוסף</button>
+</section>
+
+<!-- overlays -->
+<div id="loading" class="overlay" hidden><div class="spinner"></div><p id="loadingText">טוען…</p></div>
+
+<div id="settings" class="overlay modal" hidden>
+  <div class="card">
+    <h2>⚙️ הגדרות</h2>
+    <label class="check"><input type="checkbox" id="setBack"> לזהות אותו גם מאחור (לפי סריקת ה-360°)</label>
+    <label class="field">רגישות הזיהוי מאחור: <span id="setThrV"></span>
+      <input type="range" id="setThr" min="0.70" max="0.95" step="0.01"></label>
+    <small class="muted">ערך גבוה יותר הוא קשוח יותר: פחות טעויות, אבל קשה יותר להינעל עליו מאחור.</small>
+    <label class="field">זווית המצלמה (לחישוב המרחק): <span id="setFovV"></span>
+      <input type="range" id="setFov" min="45" max="85" step="1"></label>
+    <div class="row"><div class="row-t"><b>כיול מרחק</b><small>במשחק: עומדים בדיוק 2 מ' ממנו ולוחצים 📏</small></div><span id="setCalV" class="badge"></span><button id="setResetCal">איפוס</button></div>
+    <label class="check"><input type="checkbox" id="setSound"> צלילים</label>
+    <label class="check"><input type="checkbox" id="setDebug"> מצב בדיקה (מציג את ציוני הזיהוי במשחק)</label>
+    <button id="setDelete" class="danger">🗑️ מחיקת כל נתוני המטרה מהטלפון</button>
+    <button id="setClose" class="big primary">סגירה</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+</body>
+</html>
