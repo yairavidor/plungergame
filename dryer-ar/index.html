@@ -2,164 +2,63 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CMF Hair Dryer – AR</title>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js"></script>
 <style>
-  :root{--red:#ff2a3d;--panel:#1b1b1b;--fg:#ececec}
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{--bg:#1c1c1c;--fg:#ececec;--red:#ff2a3d}
+  *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 35%,#4a4a4a 0%,#202020 70%);color:var(--fg);
     font-family:"Courier New",ui-monospace,monospace;overflow:hidden}
-  model-viewer{position:fixed;inset:0;width:100%;height:100%;--poster-color:transparent;--progress-bar-color:var(--red)}
-  body.open model-viewer{height:55%}
-  header{position:fixed;top:0;left:0;right:0;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:3}
+  model-viewer{width:100%;height:100%;--poster-color:transparent;--progress-bar-color:var(--red)}
+  header{position:fixed;top:0;left:0;right:0;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:2}
   .brand{font-size:22px;letter-spacing:4px;font-weight:700}
   .brand small{display:block;font-size:10px;letter-spacing:3px;opacity:.6;font-weight:400}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red)}
-  .bar{position:fixed;left:0;right:0;bottom:0;padding:12px 12px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:4}
-  body.open .bar{display:none}
-  button{font:inherit;border:0;border-radius:999px;padding:13px 18px;font-size:14px;letter-spacing:1px;cursor:pointer;color:var(--fg);background:#2b2b2b;border:1px solid #555}
-  #ar{background:#f2f2f2;color:#111;font-weight:700;display:flex;align-items:center;gap:8px;border:0}
+  .bar{position:fixed;left:0;right:0;bottom:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;z-index:2}
+  button{font:inherit;border:0;border-radius:999px;padding:14px 22px;font-size:15px;letter-spacing:1px;cursor:pointer}
+  #ar{background:#f2f2f2;color:#111;font-weight:700;display:flex;align-items:center;gap:10px}
   #ar .r{width:10px;height:10px;border-radius:50%;background:var(--red)}
-  #led.off{opacity:.55}
-  #hint{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:12px;opacity:.6;text-align:center;width:92%;z-index:2}
-  body.open #hint{display:none}
-  model-viewer[ar-status="session-started"] ~ .bar{display:none}
+  #led{background:#2b2b2b;color:var(--fg);border:1px solid #555}
+  #led.off{opacity:.6}
+  #hint{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);font-size:12px;opacity:.6;text-align:center;width:90%;z-index:2}
+  model-viewer[ar-status="session-started"] ~ .bar, model-viewer[ar-status="session-started"] ~ #hint{display:none}
   #scan{display:none;position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:10px 16px;border-radius:12px;font-size:14px}
   model-viewer[ar-tracking="not-tracking"] #scan{display:block}
-
-  /* colors sheet */
-  #sheet{position:fixed;left:0;right:0;bottom:0;height:45%;background:var(--panel);border-top:1px solid #333;border-radius:18px 18px 0 0;
-    z-index:5;transform:translateY(100%);transition:transform .25s ease;display:flex;flex-direction:column}
-  body.open #sheet{transform:none}
-  #sheet .top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;gap:8px}
-  #sheet .top b{letter-spacing:2px;font-size:14px}
-  #sheet .top .btns{display:flex;gap:6px}
-  #sheet .top button{padding:8px 12px;font-size:12px}
-  #sheet .tip{font-size:11px;opacity:.55;padding:0 14px 8px}
-  #list{overflow-y:auto;padding:0 10px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .part{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:#242424;border:1px solid transparent;cursor:pointer;position:relative;font-size:13px;min-height:48px}
-  .part.sel{border-color:var(--red)}
-  .sw{width:28px;height:28px;border-radius:8px;border:1px solid #555;flex:none}
-  .part input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
-  #toast{position:fixed;top:calc(64px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:8px 14px;border-radius:10px;font-size:13px;z-index:6;opacity:0;transition:opacity .2s;pointer-events:none}
-  #toast.show{opacity:1}
 </style>
 </head>
 <body>
 <header><div class="brand">cmf<small>by NOTHING · hair dryer</small></div><div class="dot"></div></header>
 
-<model-viewer id="mv" src="fan.glb?v=4" alt="CMF hair dryer"
+<model-viewer id="mv" src="fan.glb?v=5" alt="CMF hair dryer"
   ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" ar-scale="auto"
   camera-controls touch-action="pan-y" auto-rotate auto-rotate-delay="1500" rotation-per-second="18deg"
   camera-orbit="-55deg 75deg auto" shadow-intensity="1.1" shadow-softness="0.8"
-  exposure="0.5" tone-mapping="neutral" environment-image="neutral">
+  exposure="1" tone-mapping="neutral" environment-image="neutral">
   <button slot="ar-button" style="display:none"></button>
   <div id="scan">Move the phone slowly over the surface…</div>
 </model-viewer>
 
-<div id="hint">Drag to rotate · pinch to zoom · tap a part to recolor it</div>
+<div id="hint">Drag to rotate · pinch to zoom</div>
 <div class="bar">
   <button id="ar"><span class="r"></span>VIEW ON SURFACE</button>
-  <button id="colors">COLORS</button>
-  <button id="led">LED</button>
+  <button id="led">LED ON</button>
 </div>
-
-<div id="sheet">
-  <div class="top"><b>COLORS</b><div class="btns"><button id="reset">Reset</button><button id="copy">Copy link</button><button id="done">Done</button></div></div>
-  <div class="tip">Tap a part on the model or in the list, then pick a color.</div>
-  <div id="list"></div>
-</div>
-<div id="toast"></div>
 
 <script type="module">
-const PARTS=[ // [material, label, default sRGB hex]
- ['shell','Body','#a0978f'],['front','Front & nozzle','#a0978f'],['white','Side panel & handle','#bebebe'],
- ['panel','Handle grip panel','#707070'],['ring','Rear ring','#767676'],['insert','Rear vent','#444444'],
- ['led','LED ring','#eb0828'],['grille','Nozzle grille','#6e6e70'],['glass','Round button','#080808'],
- ['chrome','Button ring','#e6e6e6'],['switch','Switch','#1e1c1c'],['logo','Logo & indicators','#58534f'],
- ['screw','Screws','#121212'],['foot','Base','#161616'],
-];
-// exact defaults from the model file are read at load; the hex above is only a fallback
-const mv=document.getElementById('mv'),list=document.getElementById('list'),toast=document.getElementById('toast');
-const state={}; let ledOn=true, sel=null;
-
-const toHex=a=>'#'+a.slice(0,3).map(v=>{v=v<=0.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-0.055;return Math.round(Math.min(1,Math.max(0,v))*255).toString(16).padStart(2,'0')}).join('');
-const mat=n=>mv.model&&mv.model.materials.find(m=>m.name===n);
-function showToast(t){toast.textContent=t;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),1400);}
-
-function apply(name,hex){
-  const m=mat(name); if(!m) return;
-  state[name]=hex;
-  m.pbrMetallicRoughness.setBaseColorFactor(hex);
-  if(name==='led'){ m.setEmissiveFactor(ledOn?hex:'#000000'); if(!ledOn) m.pbrMetallicRoughness.setBaseColorFactor('#3a3535'); }
-  const row=list.querySelector(`[data-m="${name}"]`); if(row){row.querySelector('.sw').style.background=hex;row.querySelector('input').value=hex;}
-  save();
-}
-function save(){ try{localStorage.setItem('dryerColors',JSON.stringify(state));}catch(e){} }
-function load(){
-  const h=location.hash.slice(1);
-  if(h.startsWith('c')){ // #c + 6-hex per part in PARTS order
-    const s=h.slice(1),o={}; PARTS.forEach(([n],i)=>{const x=s.substr(i*6,6); if(/^[0-9a-f]{6}$/i.test(x)) o[n]='#'+x;}); return o;
-  }
-  try{return JSON.parse(localStorage.getItem('dryerColors')||'{}');}catch(e){return {};}
-}
-function select(name){
-  sel=name; list.querySelectorAll('.part').forEach(r=>r.classList.toggle('sel',r.dataset.m===name));
-  const row=list.querySelector(`[data-m="${name}"]`); row&&row.scrollIntoView({block:'nearest',behavior:'smooth'});
-}
-function openSheet(){document.body.classList.add('open');}
-
-mv.addEventListener('load',()=>{
-  const saved=load();
-  PARTS.forEach(p=>{const m=mat(p[0]); if(m) p[2]=toHex(m.pbrMetallicRoughness.baseColorFactor);});
-  list.innerHTML='';
-  PARTS.forEach(([n,label,def])=>{
-    if(!mat(n)) return;
-    const row=document.createElement('label'); row.className='part'; row.dataset.m=n;
-    row.innerHTML=`<span class="sw" style="background:${def}"></span><span>${label}</span><input type="color" value="${def}">`;
-    const inp=row.querySelector('input');
-    inp.addEventListener('input',e=>apply(n,e.target.value));
-    inp.addEventListener('click',()=>select(n));
-    list.appendChild(row);
-  });
-  PARTS.forEach(([n,,def])=>{ if(saved[n]&&saved[n]!==def) apply(n,saved[n]); });
-});
-
-// tap on the model selects that part
-let down=null;
-mv.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
-mv.addEventListener('pointerup',e=>{
-  if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>8) return;
-  const m=mv.materialFromPoint(e.clientX,e.clientY); if(!m) return;
-  const p=PARTS.find(x=>x[0]===m.name); if(!p) return;
-  openSheet(); select(p[0]); showToast(p[1]);
-  mv.autoRotate=false;
-});
-
-document.getElementById('colors').onclick=()=>{openSheet(); mv.autoRotate=false;};
-document.getElementById('done').onclick=()=>document.body.classList.remove('open');
-document.getElementById('reset').onclick=()=>{
-  try{localStorage.removeItem('dryerColors');}catch(e){}
-  history.replaceState(null,'',location.pathname+location.search);
-  PARTS.forEach(([n,,def])=>apply(n,def)); Object.keys(state).forEach(k=>delete state[k]); save(); showToast('Original colors');
-};
-document.getElementById('copy').onclick=async()=>{
-  const code='c'+PARTS.map(([n,,def])=>(state[n]||def).slice(1)).join('');
-  const url=location.origin+location.pathname+'#'+code;
-  history.replaceState(null,'',url);
-  try{await navigator.clipboard.writeText(url);showToast('Link copied');}catch(e){showToast('Link is in the address bar');}
-};
-document.getElementById('ar').onclick=()=>{
+const mv=document.getElementById('mv'),arBtn=document.getElementById('ar'),ledBtn=document.getElementById('led'),hint=document.getElementById('hint');
+arBtn.addEventListener('click',()=>{
   if(mv.canActivateAR) mv.activateAR();
-  else document.getElementById('hint').textContent='AR needs a phone: Chrome on Android or Safari on iPhone.';
-};
-const ledBtn=document.getElementById('led');
-ledBtn.onclick=()=>{
-  ledOn=!ledOn; ledBtn.classList.toggle('off',!ledOn);
-  const m=mat('led'); if(!m) return; const c=state.led||PARTS.find(p=>p[0]==='led')[2];
-  m.setEmissiveFactor(ledOn?c:'#000000'); m.pbrMetallicRoughness.setBaseColorFactor(ledOn?c:'#3a3535');
-};
+  else hint.textContent='AR needs a phone: Chrome on Android (ARCore) or Safari on iPhone. Open this link on your phone.';
+});
+let on=true;
+ledBtn.addEventListener('click',()=>{
+  const m=mv.model&&mv.model.materials.find(x=>x.name==='led'); if(!m) return;
+  on=!on;
+  if(!m.__e) m.__e=[...m.emissiveFactor];
+  m.setEmissiveFactor(on?m.__e:[0,0,0]);
+  ledBtn.textContent=on?'LED ON':'LED OFF'; ledBtn.classList.toggle('off',!on);
+});
 </script>
 </body>
 </html>
